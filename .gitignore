@@ -1,0 +1,22 @@
+.vs/
+.vscode/
+.pytest_cache/
+*.pyc
+__pycache__/
+# GPU*.sh
+recognition/datasets/
+train_results/
+temp/
+figures/
+test*.py
+test_sy/
+wandb/
+recognition/train.py
+*.csv
+recognition/datasets
+recognition/figures
+recognition/tables
+recognition/train_results
+datasets/
+exp_results/
+exp_results_sim/
