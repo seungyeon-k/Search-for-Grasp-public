@@ -11,7 +11,7 @@ The official repository for \<Leveraging 3D Reconstruction for Mechanical Search
 
 The complete code will be available no later than December 21th. Thank you for waiting!
 
-## Preview
+<!-- ## Preview
 ### Mechanical Search on Cluttered Shelves
 In progress...
 
@@ -58,7 +58,7 @@ The control scripts in Pybullet simulator are as follows:
 ```
 python control.py --config configs/control_sim/control_sim_{X}_config.yml
 ```
-- `X` is either `moving`, `singulation`, `grasping_clutter`, `grasping_large`, or `moving_interactive`.
+- `X` is either `moving`, `singulation`, `grasping_clutter`, `grasping_large`, or `moving_interactive`. -->
 
 
 
