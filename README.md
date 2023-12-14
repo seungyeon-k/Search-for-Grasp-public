@@ -12,9 +12,8 @@ The official repository for \<Leveraging 3D Reconstruction for Mechanical Search
 The complete code will be available no later than December 21th. Thank you for waiting!
 
 ## Preview
-### Pushing Manipulation using SQPD-Net
-![pushing](figures/pushing.PNG)
-<I>Figure 2: Real-world manipulation results using SQPD-Net for moving, singulation, and grasping tasks (for the fourth row case, the target object is the cylinder surrounded by the three cubes). The red arrow at each recognition step means the optimal pushing action. </I>
+### Mechanical Search on Cluttered Shelves
+In progress...
 
 ## Requirements
 ### Environment
