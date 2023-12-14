@@ -1,0 +1,14 @@
+model:
+  temp: temp
+
+controller:
+  realworld: True
+  max_iter: 5
+  mode: search_and_grasp # search_for_grasp, search_and_grasp
+  recognition: True
+  # save_dir: test
+  ip: robot8.snu.ac.kr
+  port: 7133
+
+run: realworld
+epoch: 1

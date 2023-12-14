@@ -1,0 +1,81 @@
+data:
+  training:
+    augmentation: true
+    batch_size: 8
+    dataset: pushing
+    dataset_size: 999999
+    motion_dim: 3D
+    num_workers: 8
+    root: /PublicHDD/Equivariant_Pushing/datasets
+    split: training
+  validation:
+    augmentation: false
+    batch_size: 256
+    dataset: pushing
+    dataset_size: 999999
+    motion_dim: 3D
+    num_workers: 8
+    root: /PublicHDD/Equivariant_Pushing/datasets
+    split: validation
+device: cuda:1
+entity: sykim95
+logger:
+  endwith: []
+model:
+  arch: equi_pushingdynamics
+  module:
+    action:
+      l_hidden:
+      - 64
+      - 128
+      output_dim: 256
+    action_dim: 5
+    arch: sqpdnet
+    ego:
+      l_hidden:
+      - 64
+      - 128
+      output_dim: 256
+    global_1:
+      l_hidden:
+      - 64
+      - 128
+      output_dim: 256
+    global_2:
+      l_hidden:
+      - 256
+      - 256
+      output_dim: 256
+    motion_dim: 3D
+    motion_orientation:
+      l_hidden:
+      - 256
+      - 256
+      - 128
+      - 128
+      - 64
+      - 64
+    motion_position:
+      l_hidden:
+      - 256
+      - 256
+      - 128
+      - 128
+      - 64
+      - 64
+    num_primitives: 4
+    ori_weight: 0.1
+    sq_dim: 13
+  plug_in_type:
+  - se2
+  - ohs1
+trainer: base
+training:
+  n_epoch: 250
+  optimizer:
+    lr: 5.0e-05
+    name: adam
+  print_interval: 100
+  save_interval: 100000
+  val_interval: 5000
+wandb_project_name: equi_plug_in_3d_ori_weight_0.1

@@ -1,0 +1,42 @@
+model:
+  temp: temp
+
+controller:
+  objects:
+    num_objects: 2
+    spawn_mode: random #random, load
+  #   target: cylinder # cylinder, box
+  # grid_dim: 2D # 2D, SE2
+  max_iter: 10
+  mode: search_and_grasp # search_for_grasp, search_and_grasp
+  hinderance_mode: original
+  action_pool: ['push', 'pick_and_place']
+  recognition: False
+  realworld: False
+  save_dir: test
+  load_states_dir: exp_results/objects_2/initial_scenarios
+
+enable_gui: False
+run: idx # epoch, idx
+epoch: 5
+idx : 0
+
+# model:
+#   temp: temp
+
+# controller:
+#   objects:
+#     num_objects: 4
+#     spawn_mode: load #random, load
+#   max_iter: 10
+#   mode: search_and_grasp # search_for_grasp, search_and_grasp
+#   action_pool: ["pick_and_place", "push"]
+#   recognition: False
+#   realworld: False
+#   save_dir: test
+#   load_states_dir: exp_results/objects_4/initial_scenarios
+
+# enable_gui: False
+# run: epoch # epoch, idx
+# epoch: 100
+# idx : 14

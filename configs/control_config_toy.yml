@@ -1,0 +1,18 @@
+model:
+  temp: temp
+
+controller:
+  objects:
+    num_objects: 2
+    spawn_mode: random #random, load
+  max_iter: 10
+  mode: search_and_grasp # search_for_grasp, search_and_grasp
+  recognition: False
+  realworld: False
+  save_dir: objects_3_toy
+  load_states_dir: exp_results/3_objects_toy/initial_scenarios
+  grid_size : small
+
+run: epoch # epoch, idx
+epoch: 200
+idx : 2

@@ -11,12 +11,11 @@ figures/
 test*.py
 test_sy/
 wandb/
-recognition/train.py
 *.csv
-recognition/datasets
-recognition/figures
-recognition/tables
-recognition/train_results
+
+# datasets
 datasets/
+
+# experimental results
 exp_results/
 exp_results_sim/

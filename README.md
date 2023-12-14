@@ -10,3 +10,70 @@ The official repository for \<Leveraging 3D Reconstruction for Mechanical Search
 - *[Openreview](https://openreview.net/forum?id=ycy47ZX0Oc)*
 
 The complete code will be available no later than December 21th. Thank you for waiting!
+
+## Preview
+### Pushing Manipulation using SQPD-Net
+![pushing](figures/pushing.PNG)
+<I>Figure 2: Real-world manipulation results using SQPD-Net for moving, singulation, and grasping tasks (for the fourth row case, the target object is the cylinder surrounded by the three cubes). The red arrow at each recognition step means the optimal pushing action. </I>
+
+## Requirements
+### Environment
+The project is developed under a standard PyTorch environment.
+- python 3.9
+- pybullet 3.2.3
+- pytorch
+- tensorboardx
+- tqdm
+- h5py
+- Open3D
+- scipy
+- scikit-learn 
+- opencv-python
+- imageio
+- matplotlib
+- scikit-image
+- dominate
+- numba
+
+### Pretrained model
+Pre-trained models should be stored in `pretrained/`. The pre-trained models are already provided in this repository. After set up, the `pretrained/` directory should be follows.
+```
+pretrained
+├── segmentation_config
+│   └── pretrained
+│       ├── segmentation_config.yml
+│       └── model_best.pkl
+├── sqpdnet_2d_motion_only_config
+│   └── pretrained
+│       ├── sqpdnet_2d_motion_only_config.yml
+│       └── model_best.pkl
+└── recognition_config
+    └── pretrained
+        ├── recognition_config.yml
+        └── model_best.pkl
+```
+
+## Running
+### Control in Simulation Environment
+The control scripts in Pybullet simulator are as follows:
+```
+python control.py --config configs/control_sim/control_sim_{X}_config.yml
+```
+- `X` is either `moving`, `singulation`, `grasping_clutter`, `grasping_large`, or `moving_interactive`.
+
+
+
+
+
+## Citation
+If you found this repository useful in your research, please consider citing:
+```
+@inproceedings{kim2023leveraging,
+  title={Leveraging 3D Reconstruction for Mechanical Search on Cluttered Shelves},
+  author={Kim, Seungyeon and Kim, Young Hun and Lee, Yonghyeon and Park, Frank C},
+  booktitle={Conference on Robot Learning},
+  pages={822--848},
+  year={2023},
+  organization={PMLR}
+}
+```
