@@ -4,7 +4,7 @@ model:
 controller:
   objects:
     num_objects: 8
-    spawn_mode: load #random, load
+    spawn_mode: load # random, load
   max_iter: 10
   mode: search_for_grasp # search_for_grasp, search_and_grasp
   hinderance_score_weight: 0.1
@@ -13,7 +13,7 @@ controller:
   recognition: True
   realworld: False
   save_dir: objects_2
-  load_states_dir: exp_results/objects_8/initial_scenarios
+  load_states_dir: ../Search-for-Grasp_shared/exp_results/objects_8/initial_scenarios
 
 run: epoch # epoch, idx
 epoch: 200
