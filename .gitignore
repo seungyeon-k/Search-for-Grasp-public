@@ -7,7 +7,7 @@ __pycache__/
 recognition/datasets/
 train_results/
 temp/
-figures/
+# figures/
 test*.py
 test_sy/
 wandb/

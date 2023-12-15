@@ -13,7 +13,7 @@ The complete code will be available no later than December 21th. Thank you for w
 
 ## Preview
 ### Mechanical Search on Cluttered Shelves
-![pushing](figures/sim_results.PNG)
+![sim_results](figures/sim_results.PNG)
 <I>Figure 1: An example trajectory of simulation manipulation. Each column shows the camera input
 and action selection at each time step. In the simulation, surrounding objects are blue and the target
 object is red. </I>
