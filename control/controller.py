@@ -1,5 +1,4 @@
 import os
-from re import T
 import numpy as np
 import torch
 from copy import deepcopy
@@ -48,7 +47,6 @@ from models.segmentation_model_loader import (
 from models import load_pretrained
 from loaders.segmentation_dataset import normalize_pointcloud as normalize_pointcloud_seg
 from loaders.recognition_dataset import normalize_pointcloud as normalize_pointcloud_recog
-from loss.segmentation_loss import hungarian_matching, batch_reordering
 
 class Controller:
 	def __init__(
@@ -60,10 +58,8 @@ class Controller:
 
 		# get inputs
 		self.device = device
-		self.realworld = cfg_controller.realworld
-		self.str_realworld = 'real' if self.realworld else 'sim'
 		self.max_iter = cfg_controller.max_iter
-		self.mode = cfg_controller.mode # 'search_for_grasp', 'search_and_grasp'
+		self.mode = cfg_controller.mode
 		self.recognition = cfg_controller.recognition
 		self.str_recognition = 'R' if self.recognition else 'O' 
 		self.cfg_controller = cfg_controller
@@ -83,15 +79,10 @@ class Controller:
 		self.realworld_debug = False
 
 		# setup environment
-		if self.realworld:
-			self.env = ControlSimulationEnv(enable_gui=False)
-			camera_param = self.env.sim.camera_params[0]
-			self.depth_renderer = DepthRenderer(camera_param, device=device)
-		else:
-			self.env = ControlSimulationEnv(enable_gui=enable_gui)
-			camera_param = self.env.sim.camera_params[0]
-			self.depth_renderer = DepthRenderer(camera_param, device=device)
-			p.resetDebugVisualizerCamera(0.01, -115.7616444, 0.4165967, [-0.04457319, 0.44833383, 0.65361773])
+		self.env = ControlSimulationEnv(enable_gui=enable_gui)
+		camera_param = self.env.sim.camera_params[0]
+		self.depth_renderer = DepthRenderer(camera_param, device=device)
+		p.resetDebugVisualizerCamera(0.01, -115.7616444, 0.4165967, [-0.04457319, 0.44833383, 0.65361773])
 		self.shelf_info = self.env.sim._get_shelf_info()
 
 		# setup segmentation / recognition model
@@ -101,12 +92,6 @@ class Controller:
 		self.recognition_model = self.load_recognition_network()
 		self.segmentation_model.eval()
 		self.recognition_model.eval()
-
-		# communication setting
-		if self.realworld:
-			self.ip = cfg_controller.ip
-			self.port = cfg_controller.port
-			# self.table_offest = 0.002
 
 		# load gripper
 		gripper_open = Gripper(np.eye(4), 0.08)

@@ -61,7 +61,7 @@ class SearchPolicy():
 		
 		# setup pushing dynamics model
 		model_root = 'pretrained/sqpdnet_config'
-		model_identifier = 'sqpdnet_se2ohs1_3d_ow_0.1'
+		model_identifier = 'pretrained'
 		model_config_file = 'sqpdnet_config.yml'
 		model_ckpt_file = 'model_best.pkl'
 		self.model, _ = load_pretrained(

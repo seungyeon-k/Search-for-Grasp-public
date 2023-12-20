@@ -9,7 +9,7 @@ The official repository for \<Leveraging 3D Reconstruction for Mechanical Search
 - *[Poster](https://drive.google.com/file/d/125g_tewVmJ0L1F-pEZBpRGNSHcpZs8Kw/view?usp=drive_link)*
 - *[Openreview](https://openreview.net/forum?id=ycy47ZX0Oc)*
 
-The complete code will be available no later than December 21th. Thank you for waiting!
+The complete code will be available no later than December 29th. Thank you for waiting!
 
 ## Preview
 ### Mechanical Search on Cluttered Shelves
@@ -41,7 +41,7 @@ The project is developed under a standard PyTorch environment.
 - matplotlib
 - scikit-image
 - dominate
-- numba --> -->
+- numba -->
 
 ### Pretrained model
 Pre-trained models should be stored in `pretrained/`. The pre-trained models are already provided in this repository. After set up, the `pretrained/` directory should be follows.
