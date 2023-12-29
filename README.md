@@ -9,8 +9,6 @@ The official repository for \<Leveraging 3D Reconstruction for Mechanical Search
 - *[Poster](https://drive.google.com/file/d/125g_tewVmJ0L1F-pEZBpRGNSHcpZs8Kw/view?usp=drive_link)*
 - *[Openreview](https://openreview.net/forum?id=ycy47ZX0Oc)*
 
-The complete code will be available no later than December 29th. Thank you for waiting!
-
 ## Preview
 ### Mechanical Search on Cluttered Shelves
 ![sim_results](figures/sim_results.PNG)
@@ -68,7 +66,7 @@ The control scripts in Pybullet simulator are as follows:
 python control.py --config configs/control_config.yml
 ```
 
-### Spawn Object Sets for Experiments
+<!-- ### Spawn Object Sets for Experiments
 The scripts in Pybullet simulator are as follows:
 ```
 python spawn.py
@@ -107,7 +105,7 @@ python data_generation.py --enable_gui                # PyBullet UI on/off
                           --training_num 150          # the number of training set; total number of training set is (training_num * push_num)
                           --validation_num 15         # the number of validation set; total number of validation set is (validation_num * push_num)
                           --test_num 15               # the number of test set; total number of test set is (test_num * push_num)
-```
+``` -->
 
 ## Citation
 If you found this repository useful in your research, please consider citing:
