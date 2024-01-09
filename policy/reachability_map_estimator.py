@@ -250,6 +250,94 @@ def check_collision(
 ###################### GET FUNCTIONS #######################
 ############################################################
 
+def get_graspability_hindrance_batchwise(
+	target_object_poses,
+	target_object_sq_param,
+	Ts,
+	parameters,
+	pc_of_target_objects,
+	shelf_info,
+	gripper_pc=None,
+	visualize=False,
+	mode="smooth", 
+):
+	"""check the number of objects which hinder target object grasping.
+
+	Args:
+		target_object_pose (n_t x 4 x 4 torch tensor): target object's pose
+		target_object_sq_param (5 torch tensor): target object's parameter
+		Ts (n x 4 x 4 torch tensor): surrounding objects' poses
+		parameters (n x 5 torch tensor): surrounding objects' parameters
+		pc_of_target_object (n_t x n_pc_t x 3) : target_object's pointcloud preresented in global frame
+		Ts_shelf (n_sh x 4 x 4, optional): shelf parts' poses.
+		parameters_shelf (n_sh x 5, optional): shelf parts' parameters.
+		gripper_pc (n_pc x 3, optional): gripper trajectory's point cloud.
+		visualize (bool, optional): debugging mode
+		mode (str, optional): smooth / original : smooth - get smoothed value, original - get 0 or 1
+
+	Returns:
+		score (bool): target object is graspable or not
+  		valid_grasp_poses: (n_grasp x 4 x 4): valid (non-collided) grasp poses
+	"""
+
+	# calculate grasp poses
+
+	gripper_SE3s = []
+	split_list = []
+	for pose in target_object_poses:
+		gripper_SE3 = superquadric_grasp_planner(
+			pose, 
+			target_object_sq_param
+		)
+		split_list.append(len(gripper_SE3))
+		gripper_SE3s.append(gripper_SE3)
+	gripper_SE3s = torch.cat(gripper_SE3s, dim=0)
+	device = Ts.device
+
+	# check collision
+	if len(gripper_SE3s) >= 1:
+		pc_of_objects_afterimage = get_pc_afterimage(pc_of_target_objects, distance = 0.2, directions = -gripper_SE3s[:,0:3,2])
+		pc_of_objects_afterimage = torch.bmm(pc_of_objects_afterimage, gripper_SE3s[:,0:3,0:3]) - torch.bmm(gripper_SE3s[:,0:3,3].unsqueeze(1), gripper_SE3s[:,0:3,0:3])
+
+  
+		Ts_shelf, parameters_shelf = get_shelf_sq_values(shelf_info, device=device)
+		collision_gripper = check_collision(
+			Ts,
+			parameters,
+			gripper_SE3s,
+			gripper_pc,
+			Ts_shelf=Ts_shelf,
+			parameters_shelf=parameters_shelf,
+			object_collision_scale=1.05,
+			visualize=visualize,
+			return_noncollide_poses=False,
+			return_type='sum',
+		) # n_grasp x n_sq
+
+		Ts_shelf, parameters_shelf = get_shelf_sq_values(shelf_info, device=device, exclude_list=['middle'])
+		collision_object = check_collision(
+			Ts,
+			parameters,
+			gripper_SE3s,
+			pc_of_objects_afterimage,
+			Ts_shelf=Ts_shelf,
+			parameters_shelf=parameters_shelf,
+			object_collision_scale=1.05,
+			visualize=visualize,
+			return_noncollide_poses=False,
+			return_type='sum',
+		) # n_grasp x n_sq
+
+		collision = collision_gripper[:,:len(Ts)] | collision_object[:,:len(Ts)]
+		if mode == 'smooth':
+			score = collision.sum(dim=1).min(dim=0).values
+		elif mode == 'original':
+			score = collision.max(dim=1).values.min(dim=0).values
+		return score
+	
+	else:
+		return 99.
+
 def get_graspability_hindrance(
 	target_object_pose,
 	target_object_sq_param,
@@ -314,7 +402,7 @@ def get_graspability_hindrance(
 			Ts,
 			parameters,
 			gripper_SE3s,
-			gripper_pc, # To do : change to pc_of_objects_afterimage
+			pc_of_objects_afterimage,
 			Ts_shelf=Ts_shelf,
 			parameters_shelf=parameters_shelf,
 			object_collision_scale=1.05,

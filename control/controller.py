@@ -58,25 +58,21 @@ class Controller:
 
 		# get inputs
 		self.device = device
+		
+		# process from cfg
 		self.max_iter = cfg_controller.max_iter
 		self.mode = cfg_controller.mode
 		self.recognition = cfg_controller.recognition
 		self.str_recognition = 'R' if self.recognition else 'O' 
-		self.cfg_controller = cfg_controller
+		self.objects = cfg_controller.objects
 		self.save_dir = cfg_controller.get('save_dir', datetime.now().strftime('%Y%m%d-%H%M'))
 		self.load_states_dir = cfg_controller.get('load_states_dir', None)
 		self.hinderance_score_weight = cfg_controller.get('hinderance_score_weight', 0.1)
 		self.target_object = cfg_controller.objects.get('target', 'cylinder')
-		if not self.realworld:
-			self.num_objects = cfg_controller.objects.num_objects
-		if self.realworld:
-			self.target_sq = torch.tensor([0.02, 0.02, 0.05, 0.2, 1.0]).to(self.device)
+		self.num_objects = cfg_controller.objects.num_objects
 		self.grid_size = cfg_controller.get('grid_size', 'large')
 		self.grid_dim = cfg_controller.get('grid_dim', '2D')
 		self.action_pool = cfg_controller.get('action_pool', ["pick_and_place", "push"])
-
-		# debugging mode
-		self.realworld_debug = False
 
 		# setup environment
 		self.env = ControlSimulationEnv(enable_gui=enable_gui)
@@ -122,7 +118,7 @@ class Controller:
 		self.env.sim.reset_robot()
 		self.env.sim.robot_go_home()
 		if states_dir is None:
-			self.env.reset(self.cfg_controller.objects)
+			self.env.reset(self.objects)
 			# set target objects
 			if self.target_object == 'cylinder':
 				self.target_sq = torch.tensor([0.02, 0.02, 0.05, 0.2, 1.0]).to(self.device)
@@ -172,27 +168,6 @@ class Controller:
 			)
 			return True
 
-	def get_search_policy_realworld(self):
-		self.env.sim.reset_robot()
-		self.env.sim.robot_go_home()
-
-		self.search_policy = SearchPolicy(
-			self.target_sq, 
-			self.depth_renderer, 
-			self.pose_map_grid,
-			self.reachability_grid,
-			self.reachability_grid_shape,
-			self.gripper_open_pc, 
-			self.shelf_info,
-			self.Ts_shelf,
-			self.parameters_shelf,
-			mode=self.mode,
-			device=self.device,
-			hinderance_score_weight=self.hinderance_score_weight,
-			action_pool = self.action_pool
-		)
-		return True
-
 	def spawn_datas(self, exp_idx):
 		# data save folder
 		save_folder = os.path.join(
@@ -229,7 +204,7 @@ class Controller:
 		
 		# data save folder
 		save_folder = os.path.join(
-			f'exp_results_{self.str_realworld}', 
+			f'exp_results_sim', 
    			self.save_dir,
 			f'{self.str_recognition}_{self.mode}_{self.target_object}',
 			str(exp_idx)
@@ -238,24 +213,19 @@ class Controller:
 			os.makedirs(save_folder)
 		
 		# spawn every objects
-		if not self.realworld:
-			if self.load_states_dir is not None:
-				states_dir = os.path.join(self.load_states_dir, f'initial_scenario_{exp_idx}.pkl')
-			else:
-				states_dir = None
+		if self.load_states_dir is not None:
+			states_dir = os.path.join(self.load_states_dir, f'initial_scenario_{exp_idx}.pkl')
+		else:
+			states_dir = None
 
-			spawn_success = self.reset_env(states_dir)
+		spawn_success = self.reset_env(states_dir)
 
-			# save scenario
-			if not spawn_success:
-				return False # end control!
-			else:
-				with open(os.path.join(save_folder, 'initial_scenario.pkl'), 'wb') as f:
-					pickle.dump(self.env.object_infos, f, pickle.HIGHEST_PROTOCOL)
-
-		# initialize serach policy
-		if self.realworld:
-			self.get_search_policy_realworld()
+		# save scenario
+		if not spawn_success:
+			return False # end control!
+		else:
+			with open(os.path.join(save_folder, 'initial_scenario.pkl'), 'wb') as f:
+				pickle.dump(self.env.object_infos, f, pickle.HIGHEST_PROTOCOL)
 
 		# initialize data
 		iteration = 0
@@ -264,8 +234,6 @@ class Controller:
 
 		# control
 		while not graspability or not found:
-			
-			#print(f"************************* Iteration {iteration} *************************")
 	
 			file_name = os.path.join(
 				save_folder, 
@@ -273,28 +241,8 @@ class Controller:
 			)		
 	
 			# get observation
-			if self.realworld:
-				# load
-				if not self.realworld_debug:	
-					server = Listener(self.ip, self.port)
-					#print(f'waiting image ...')
-					data = server.recv_vision()
-					np.save('test', data)
-				else:
-					data = np.load('test.npy', allow_pickle=True).item()
-				# process data
-				pc = data[b'pc']
-				if 'labels' in data:
-					labels = data[b'labels']
-				else:
-					labels = None
-				color_image = data[b'color_image']
-				depth_image = data[b'depth_image']
-				del data
-
-			else:
-				pc, labels, color_image, depth_image, mask = self.env.observe()  
-				# render_segmentation(pc, labels)
+			pc, labels, color_image, depth_image, mask = self.env.observe()  
+			# render_segmentation(pc, labels)
 				
 			# observation numpy to torch
 			pc = pc.T
@@ -304,21 +252,15 @@ class Controller:
 
 			# recognition
 			if self.recognition:
-				if self.realworld: # 
-					Ts, parameters = self.realworld_recognition(
-						pc,
-						labels=labels
-					)						
-				else: # gt segmentation label in simulation
-					Ts, parameters = self.simulation_recognition(
-						pc,
-						labels
-					)
-					Ts_gt, parameters_gt = self.env.groundtruth_recognition(
-					output_dtype='torch'
-					)
-					Ts_gt = Ts_gt.to(self.device)
-					parameters_gt = parameters_gt.to(self.device)
+				Ts, parameters = self.simulation_recognition(
+					pc,
+					labels
+				)
+				Ts_gt, parameters_gt = self.env.groundtruth_recognition(
+				output_dtype='torch'
+				)
+				Ts_gt = Ts_gt.to(self.device)
+				parameters_gt = parameters_gt.to(self.device)
 			else:	
 				Ts, parameters = self.env.groundtruth_recognition(
 					output_dtype='torch'
@@ -343,39 +285,26 @@ class Controller:
 				'surrounding_objects_parameters': parameters.cpu().numpy(),
 				'target_parameter': self.target_sq.cpu().numpy(),
 			}
-			data_to_send = {
-				'list_sq_poses': Ts.cpu().numpy(),
-				'list_sq_parameters': parameters.cpu().numpy(),				
-			}
 
-			if not self.realworld and self.recognition:
+			if self.recognition:
 				save_dict['gt_surrounding_objects_poses'] = Ts_gt.cpu().numpy()
 				save_dict['gt_surrounding_objects_parameters'] = parameters_gt.cpu().numpy()
 	
 			# check if target object is found
 			if not found:
-				if self.realworld:
-					found = False
-					# raise NotImplementedError # output found (detection module)
-				else:
-					found = (mask == self.num_objects + 4).sum() > 100
+				found = (mask == self.num_objects + 4).sum() > 100
 
 			# obtain task status
 			if found: # found
 
-				if self.realworld:
-					raise NotImplementedError # output target pose	
-				else:
-					target_pose = self.env.groundtruth_recognition(output_dtype='torch')[0][-1].to(self.device)
+				target_pose = self.env.groundtruth_recognition(output_dtype='torch')[0][-1].to(self.device)
 	
 				if self.recognition:
 					recognized_target = (labels == self.num_objects + 4).sum() > self.num_pts_recog
 	 
 				pc_of_target_object = get_pc_of_objects(target_pose.unsqueeze(0), self.target_sq.unsqueeze(0)).squeeze().to(self.device)
 	
-				if self.realworld:
-					raise NotImplementedError
-				elif self.recognition:
+				if self.recognition:
 					if recognized_target:
 						target_idx = len(Ts) - 1
 						Ts[-1] = target_pose
@@ -397,13 +326,12 @@ class Controller:
 					self.gripper_open_pc,
 					visualize=False
 					)
-    
-				self.search_policy.target_detected(target_pose, target_idx)
+				self.search_policy.target_detected(target_pose, target_idx)	
 				
 				if not torch.is_tensor(graspability):
 					graspability = torch.tensor(graspability)
+				
 				if graspability: # found and graspable
-					#print("try target retrieve!")
 					save_dict['status'] = "success"
 					save_dict['found'] = found
 					save_dict['target_grasp_pose'] = grasp_pose[0].cpu().numpy()
@@ -413,57 +341,39 @@ class Controller:
 						pickle.dump(save_dict, f, pickle.HIGHEST_PROTOCOL)
 					break
 			else:
-				if self.realworld:
-					pass
-				elif self.recognition:
+				
+				if self.recognition:
 					pass
 				else:
 					Ts = Ts[:-1]
 					parameters = parameters[:-1]
-
-			# check status
+			
 			if not torch.is_tensor(graspability):
 				graspability = torch.tensor(graspability)
-			#print(f'found: {found}, graspable: {graspability.item()}')
+
+			# print status
+			print(f'Iter: {iteration}, found: {found}, graspable: {graspability.item()}')
 			save_dict['found'] = found
 			save_dict['graspability'] = graspability.item(),
 
+			# max iteration
 			if iteration == self.max_iter:
-				# save
-				#print("arrived at max iter")
 				save_dict['status'] = "failed by reaching max iteration"
 				with open(file_name, 'wb') as f:
 					pickle.dump(save_dict, f, pickle.HIGHEST_PROTOCOL)
 				break
    
 			# check if objects are in workspace
-			if not self.realworld:
-				if self.recognition:
-					is_in_workspace = self.check_objects_are_in_workspace(self.workspace_bounds.to(self.device), Ts_gt.to(self.device))
-				else:
-					is_in_workspace = self.check_objects_are_in_workspace(self.workspace_bounds.to(self.device), Ts.to(self.device))
-				if not is_in_workspace:
-					#print("objects out of workspace")
-					save_dict['status'] = "failed by objects out of workspace"
-					with open(file_name, 'wb') as f:
-						pickle.dump(save_dict, f, pickle.HIGHEST_PROTOCOL)
-					break
-   
-			# #####################
-			# target_pose = self.env.groundtruth_recognition(output_dtype='torch')[0][-1].to(self.device)
-			# pc_of_target_object = get_pc_of_objects(target_pose.unsqueeze(0), self.target_sq.unsqueeze(0)).squeeze().to(self.device)
-			# graspability, grasp_pose = check_graspability(
-			# target_pose,
-			# self.target_sq,
-			# Ts[[]],
-			# parameters[[]],
-			# pc_of_target_object,
-			# self.env.sim._get_shelf_info(),
-			# self.gripper_open_pc,
-			# visualize=True
-			# )
-			# #####################
-   
+			if self.recognition:
+				is_in_workspace = self.check_objects_are_in_workspace(self.workspace_bounds.to(self.device), Ts_gt.to(self.device))
+			else:
+				is_in_workspace = self.check_objects_are_in_workspace(self.workspace_bounds.to(self.device), Ts.to(self.device))
+			if not is_in_workspace:
+				save_dict['status'] = "failed by objects out of workspace"
+				with open(file_name, 'wb') as f:
+					pickle.dump(save_dict, f, pickle.HIGHEST_PROTOCOL)
+				break
+
    			# find best action
 			actions = self.search_policy.find_best_action(
 				Ts, parameters
@@ -475,55 +385,29 @@ class Controller:
 				save_dict['status'] = actions[0]['description']
 				with open(file_name, 'wb') as f:
 					pickle.dump(save_dict, f, pickle.HIGHEST_PROTOCOL)
-				if self.realworld:
-					data_to_send['action_type'] = 'fail'
-					server.send_grasp(data_to_send)
-					server.close_connection()
 				break
 			
 			# control
-
 			control_success = False
 			for action in actions:
-				if self.realworld:
-					control_success, list_qd, list_vel, list_acc = self.env.implement_action_realworld(action)
-				else:
-					control_success = self.env.implement_action(action)
+				control_success = self.env.implement_action(action)
 				if not control_success:
 					self.env.sim.reset_robot()
 					self.env.sim.robot_go_home()
-					if not self.realworld:
-						self.env._reset_objects(Ts_gt[:,0:3,3].cpu().numpy(), matrices_to_quats_torch(Ts_gt[:,0:3,0:3]).cpu().numpy())
+					self.env._reset_objects(Ts_gt[:,0:3,3].cpu().numpy(), matrices_to_quats_torch(Ts_gt[:,0:3,0:3]).cpu().numpy())
 				else:
-					if self.realworld:
-						break
+					Ts_gt_temp, _ = self.env.groundtruth_recognition(output_dtype='torch')
+					is_in_workspace_temp = self.check_objects_are_in_workspace(self.workspace_bounds.to(self.device), Ts_gt_temp.to(self.device))
+					if not is_in_workspace_temp:
+						self.env._reset_objects(Ts_gt[:,0:3,3].cpu().numpy(), matrices_to_quats_torch(Ts_gt[:,0:3,0:3]).cpu().numpy())
 					else:
-						Ts_gt_temp, _ = self.env.groundtruth_recognition(output_dtype='torch')
-						is_in_workspace_temp = self.check_objects_are_in_workspace(self.workspace_bounds.to(self.device), Ts_gt_temp.to(self.device))
-						if not is_in_workspace_temp:
-							self.env._reset_objects(Ts_gt[:,0:3,3].cpu().numpy(), matrices_to_quats_torch(Ts_gt[:,0:3,0:3]).cpu().numpy())
-						else:
-							break
+						break
 
-			#print(f"control success : {control_success}")
 			if not control_success:
 				save_dict['status'] = "failed to control"
 				with open(file_name, 'wb') as f:
 					pickle.dump(save_dict, f, pickle.HIGHEST_PROTOCOL)
-				if self.realworld:
-					data_to_send['action_type'] = action['action_type']
-					data_to_send['status'] = 'fail'
-					server.send_grasp(data_to_send)
-					server.close_connection()
 				break
-			elif control_success and self.realworld:
-				data_to_send['action_type'] = action['action_type']
-				data_to_send['status'] = 'success' 			
-				data_to_send['list_qd'] = list_qd
-				data_to_send['list_vel'] = list_vel
-				data_to_send['list_acc'] = list_acc
-				server.send_grasp(data_to_send)
-				server.close_connection()
 	
 			# save action
 			action_numpy = deepcopy(action)
@@ -531,15 +415,15 @@ class Controller:
 				if torch.is_tensor(action_numpy[key]):
 					action_numpy[key] = action_numpy[key].cpu().numpy()
 			save_dict['implemented_action'] = action_numpy
+			
 			# save data
-   
 			save_dict['status'] = "normal operation"
 			with open(file_name, 'wb') as f:
 				pickle.dump(save_dict, f, pickle.HIGHEST_PROTOCOL)
 
 			# iteration number
 			iteration += 1
-		print(save_dict['status'])
+
 		return True
 
 	#############################################################
@@ -775,15 +659,6 @@ class Controller:
 			self.depth_renderer
 		)
 
-		# # rendering pose map and target object
-		# render_map(
-		# 	Ts.to(self.device), 
-		# 	parameters.to(self.device),
-		# 	self.pose_map_grid,
-		# 	fully_occluded_positions, 
-		# 	self.shelf_info
-		# 	)
-
 		# spawn target object
 		target_pose = get_poses_from_grid(self.pose_map_grid[fully_occluded], self.target_sq[2])
 		spawn_success = False
@@ -837,10 +712,6 @@ class Controller:
 				break
 
 		return spawn_success
-
-	#############################################################
-	############################ etc ############################
-	#############################################################	
  
 	def check_objects_are_in_workspace(self, workspace_bounds, Ts):
 		workspace_bounds = workspace_bounds.to(self.device)

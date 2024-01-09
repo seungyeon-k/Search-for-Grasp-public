@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from functions.superquadrics import sq_distance
 from copy import deepcopy
 
+import time
+
 class DepthRenderer(nn.Module):
     def __init__(self, 
                  camera_param,
@@ -128,10 +130,53 @@ class DepthRenderer(nn.Module):
         """
         with torch.no_grad():
             
+            mask, pts_flat = self.get_valid_points(sq_poses, sq_params)
+            # print(pts_flat.shape, sq_poses.shape, sq_params.shape)
+            
+            n_sq = len(sq_poses)
+            n_total_pnts = pts_flat.shape[0] * pts_flat.shape[1]
+
+            # 
+            split_indices = mask.sum(dim=[1,2])
+            valid_indices = torch.arange(n_sq).to(self.device).repeat_interleave(split_indices * (self.N_samples+2))
+            valid_indices = torch.arange(n_sq).to(self.device).repeat(n_total_pnts, 1) == valid_indices.unsqueeze(-1)
+
+            # calculate sdf values for sampled points
+            sdf_values = sq_distance(
+                pts_flat.reshape(-1, 3), 
+                sq_poses,
+                sq_params
+            ) # n x n_sq --> n (mask.sum(dim=[1,2]).tolist())
+            sdf_values = sdf_values[valid_indices]
+    
+            occ_values = torch.sigmoid(self.sharpness * (1 - sdf_values))
+            
+            outputs = occ_values.reshape(-1, self.N_samples+2)
+
+            # visibility function
+            visibility = torch.cumsum(outputs, dim=-1)
+            visibility = torch.exp(-self.tau * visibility)
+            valid_depth = self.integrate(visibility, pts_flat)
+
+            depth = torch.zeros(n_sq, int(self.height//self.reduce_ratio), int(self.width//self.reduce_ratio)).to(self.device)
+            depth[mask] = valid_depth
+            depth[~mask] = self.far
+
+        return depth
+
+    def get_all_depths_old(self, sq_poses, sq_params):
+        """
+        input: sq_poses (n x 4 x 4 torch tensor)
+               sq_params (n x 5 torch tensor)
+        output: depth map (n x camera_height x camera_width tensor)
+        """
+        with torch.no_grad():
+            
             depth_list = []
             mask, pts_flat = self.get_valid_points(sq_poses, sq_params)
-            pts_flat_per_sq = pts_flat.split(mask.sum(dim=[1,2]).tolist())
-            # calculate sdf values for sampled points 
+            pts_flat_per_sq = pts_flat.split(mask.sum(dim=[1,2]).tolist()) 
+
+            # calculate sdf values for sampled points
             for i in range(len(pts_flat_per_sq)):
                 pts_flat = pts_flat_per_sq[i]
                 sdf_values = sq_distance(
@@ -150,6 +195,8 @@ class DepthRenderer(nn.Module):
                 
                 valid_depth = self.integrate(visibility, pts_flat)
                 depth = torch.zeros(int(self.height//self.reduce_ratio), int(self.width//self.reduce_ratio)).to(self.device)
+                
+                
                 depth[mask[i]] = valid_depth
                 depth[~mask[i]] = self.far
                 
@@ -157,7 +204,7 @@ class DepthRenderer(nn.Module):
             depth_list = torch.stack(depth_list)
         
         return depth_list
-    
+
     def depth_render(self, sq_poses, sq_params):
         with torch.no_grad():
             depth_list = self.get_all_depths(sq_poses, sq_params)
@@ -170,7 +217,7 @@ class DepthRenderer(nn.Module):
         depth_predicted = torch.sum(cen_visibility * dt, dim=-1) + self.near
         return depth_predicted
     
-    def depth_render_batchwise(self, target_object_poses, target_object_sq_params, other_objects_poses, other_objects_sq_params, batch_size=3):
+    def depth_render_batchwise(self, target_object_poses, target_object_sq_params, other_objects_poses, other_objects_sq_params, batch_size=100):
         """
         Note that other objects are not changed throughout the batch. Only target objects will be changed in the batch.
         

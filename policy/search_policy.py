@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from policy.pose_map_estimator import get_pose_map
-from policy.reachability_map_estimator import get_graspability_hindrance, check_graspability
+from policy.reachability_map_estimator import get_graspability_hindrance, check_graspability, get_graspability_hindrance_batchwise
 from policy.pick_and_place_planner import get_random_graspable_object_and_pose, place_object_at_random_position
 from policy.push_planner import get_random_pushing_action, estimated_pushing_dynamics
 from copy import deepcopy
@@ -38,6 +38,7 @@ class SearchPolicy():
 		action_pool=["pick_and_place", "push"]
 	):
 		
+		# initialize
 		self.target_object_sq_param = target_object_sq_param.to(device)
 		self.depth_renderer = depth_renderer
 		self.pose_map_grid = pose_map_grid.to(device)
@@ -49,7 +50,6 @@ class SearchPolicy():
 		self.Ts_shelf = Ts_shelf
 		self.parameters_shelf = parameters_shelf
 		self.hinderance_mode = hinderance_mode
-		
 		self.discount_factor = 0.9
 		self.hinderance_score_weight = hinderance_score_weight
 		self.step_num = step_num
@@ -102,7 +102,7 @@ class SearchPolicy():
 				objects_sq_params,
 				self.depth_renderer
 			)
-   
+
 			# render_map(
 			# 	objects_poses,
 			# 	objects_sq_params,
@@ -110,12 +110,15 @@ class SearchPolicy():
 			# 	self.pose_map,
 			# 	self.shelf_info
 			# )
+
 			self.pose_map_grid = self.pose_map_grid[self.pose_map]
 			
 		else:
+    			
 			# if target object was found, confine the existable position to detected target position
 			self.pose_map = torch.tensor([True])
 			self.pose_map_grid = self.target_pose[0:2, 3].unsqueeze(0)
+		
 		return self.pose_map.sum() > 0
 
 	def sample_action(
@@ -154,8 +157,6 @@ class SearchPolicy():
 
 		grasping_object_num = len(graspable_object_idxs)
 		pushing_object_num = len(pushing_object_idxs)
-  
-		# print(f"graspable objects : {grasping_object_num}, pushable objects : {pushing_object_num}")
 
 		if grasping_object_num == 0 and pushing_object_num == 0:
 			return {
@@ -195,6 +196,7 @@ class SearchPolicy():
 		with torch.no_grad():
 			if not self.found_target:
 
+				# tic = time.time()
 				predicted_pose_map = get_pose_map(
 					pose_map_grid,
 					self.target_object_sq_param,
@@ -202,6 +204,8 @@ class SearchPolicy():
 					objects_sq_params,
 					self.depth_renderer
 				)
+				# toc = time.time()
+				# print(f"elasped time for pose map calculation : {toc-tic}")
 
 				# convert grid map to SE(3)s
 				SE3s = get_poses_from_grid(pose_map_grid, height_offset=self.target_object_sq_param[2])
@@ -212,20 +216,35 @@ class SearchPolicy():
 			if self.mode == "search_for_grasp" or (self.mode == "search_and_grasp" and self.found_target):
 				hindrance_score_list = []
 				pc_of_target_objects = get_pc_of_objects(SE3s, self.target_object_sq_param.repeat(len(SE3s), 1))
-				for SE3, pc_of_target_object in zip(SE3s, pc_of_target_objects):
-					hindrance_score = get_graspability_hindrance(
-						SE3,
-						self.target_object_sq_param,
-						objects_poses,
-						objects_sq_params,
-						pc_of_target_object,
-						self.shelf_info,
-						self.gripper_open_pc,
-						visualize=False,
-      					mode=self.hinderance_mode
-					)
-					hindrance_score_list.append(hindrance_score)
-				hindrance_score_list = torch.tensor(hindrance_score_list)
+				tic = time.time()
+				# for SE3, pc_of_target_object in zip(SE3s, pc_of_target_objects):
+				# 	hindrance_score = get_graspability_hindrance(
+				# 		SE3,
+				# 		self.target_object_sq_param,
+				# 		objects_poses,
+				# 		objects_sq_params,
+				# 		pc_of_target_object,
+				# 		self.shelf_info,
+				# 		self.gripper_open_pc,
+				# 		visualize=False,
+      			# 		mode=self.hinderance_mode
+				# 	)
+				# 	hindrance_score_list.append(hindrance_score)
+				# hindrance_score_list = torch.tensor(hindrance_score_list)
+				hindrance_score = get_graspability_hindrance_batchwise(
+					SE3s,
+					self.target_object_sq_param,
+					objects_poses,
+					objects_sq_params,
+					pc_of_target_objects,
+					self.shelf_info,
+					self.gripper_open_pc,
+					visualize=False,
+					mode=self.hinderance_mode
+				)
+				toc = time.time()
+				print(f"elasped time for grapability map calculation : {toc-tic}")
+
 			if self.mode == "search_for_grasp":
 				score = -torch.sum(hindrance_score_list) * self.hinderance_score_weight - torch.sum(predicted_pose_map)
 			elif self.mode == "search_and_grasp" and not self.found_target :
@@ -233,10 +252,6 @@ class SearchPolicy():
 			elif self.mode == "search_and_grasp" and self.found_target :
 				score = -torch.sum(hindrance_score_list).float() * self.hinderance_score_weight
 			return score, pose_map_grid[predicted_pose_map]
-			# if not self.found_target:
-			# 	return score, pose_map_grid[predicted_pose_map]
-			# else:
-			# 	return score, SE3s[0:3, [3]]
 
 	def sample_trajectories(
 		self,
@@ -334,10 +349,10 @@ class SearchPolicy():
 				total_score_list.append(traj_score)
 			else:
 				total_score_list.append(torch.tensor(-9999.0))
+		
 		if success_sampling:
 			sorted_idx = torch.tensor(total_score_list).argsort(descending=True)
-			# print(f"best action score is {total_score_list[sorted_idx[0]].item()}")
-			# print(f"len of saved_action : {len(saved_action)}, len of total_score : {len(total_score_list)}")
+
 			return [saved_action[idx] for idx in sorted_idx]
 		else:
 			return []
@@ -356,7 +371,7 @@ class SearchPolicy():
 		Returns:
 			_type_: _description_
 		"""
-
+		
 		tic = time.time()
 
 		pose_map_update_success = self.update_pose_map(
@@ -373,7 +388,7 @@ class SearchPolicy():
 		actions = self.sample_trajectories(objects_poses, objects_sq_params)
 
 		toc = time.time()
-		#print(f"elasped time for search policy : {toc-tic}")
+		print(f"elasped time for search policy : {toc-tic}")
 
 		action_infos = []
 

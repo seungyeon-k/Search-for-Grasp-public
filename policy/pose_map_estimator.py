@@ -10,6 +10,7 @@ from control.utils import (
 from .utils import get_poses_from_grid
 import matplotlib.pyplot as plt
 from copy import deepcopy
+import time
 
 def check_depth_feasibility(
         target_object_poses,
@@ -102,7 +103,7 @@ def check_pose(
         other_objects_sq_params, 
         depth_renderer
         )
-
+    
     # check collision
     collsion = check_collision(
         target_object_poses,
@@ -110,7 +111,6 @@ def check_pose(
         other_objects_poses,
         other_objects_sq_params
         )
-
     return depth & ~collsion
 
 def get_pose_map(

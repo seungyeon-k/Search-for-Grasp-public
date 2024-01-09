@@ -16,6 +16,9 @@ wandb/
 # datasets
 datasets/
 
+# jupyter
+notebook/
+
 # experimental results
 exp_results/
 exp_results_sim/
