@@ -4,7 +4,7 @@ from functions.utils_wandb import sq_pc_from_parameters
 from functions.lie import quats_to_matrices, get_SE3s
 from functions.lie_torch import exp_so3
 
-def get_pc_afterimage(pc, distance=0.2, directions=[[0, 0, 1]], number_of_points=1024):
+def get_pc_afterimage(pc, distance=0.2, directions=[[0, 0, 1]], number_of_points=1024, num_image=10):
     """get pointcloud of afterimage made by moving given pointcloud along given direction by given distance 
 
     Args:
@@ -13,16 +13,31 @@ def get_pc_afterimage(pc, distance=0.2, directions=[[0, 0, 1]], number_of_points
         directions (n_dir x 3 tensor): _description_
         
     Returns:
+        afterimages (n_dir x number_of_points x 3 tensor)
+    """
+    n_dir = len(directions)
+    device = pc.device
+    afterimages = pc.unsqueeze(0).unsqueeze(0) + torch.linspace(0, distance, num_image).view(1, num_image, 1, 1).to(device) * directions.view(n_dir, 1, 1, 3)
+    afterimages = afterimages.view(n_dir, -1, 3)
+    # uniform sample from afterimage
+    random_idx = torch.randperm(afterimages.shape[1])[:number_of_points]
+    return afterimages[:,random_idx,:]
+
+def get_pc_afterimage_batchwise(pcs, directions, distance=0.2, number_of_points=1024, num_image=10):
+    """get pointcloud of afterimage made by moving given pointcloud along given direction by given distance 
+
+    Args:
+        pcs (n_dir x n_pc x 3 tensor): _description_
+        directions (n_dir x 3 tensor): _description_
+        distance (float): _description_
+    Returns:
         afterimages (n_dir x n_pc x 3 tensor)
     """
-    num_image = 10
-    afterimages = []
-
-    for i in range(num_image):
-        afterimages.append(deepcopy(pc).unsqueeze(0) + (directions.unsqueeze(1) * distance * i / (num_image-1)))
-
-    afterimages = torch.cat(afterimages, dim=1)
-
+    n_dir = len(directions)
+    device = pcs.device
+    afterimages = pcs.unsqueeze(1) + torch.linspace(0, distance, num_image).view(1, num_image, 1, 1).to(device) * directions.view(n_dir, 1, 1, 3)
+    afterimages = afterimages.view(n_dir, -1, 3)
+    # uniform sample from afterimage
     random_idx = torch.randperm(afterimages.shape[1])[:number_of_points]
     return afterimages[:,random_idx,:]
 

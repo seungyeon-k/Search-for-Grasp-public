@@ -15,7 +15,8 @@ def superquadric_grasp_planner(
   		augment_flip=False,
 		tilt=True,
 		augment_tilt=False,
-		desired_dir=torch.tensor([1., 0., 0.])
+		desired_dir=torch.tensor([1., 0., 0.]),
+		return_bool=False
 	):
 	"""generate grasp poses for superquadric objects
 
@@ -125,7 +126,10 @@ def superquadric_grasp_planner(
 		gripper_ps = torch.cat(ps_list, dim=0)
 		gripper_SO3s = torch.cat(SO3s_list, dim=0)
 		gripper_SE3s = get_SE3s_torch(gripper_SO3s, gripper_ps)
-		gripper_SE3s = SE3 @ gripper_SE3s.to(SE3)
+		if len(SE3.shape) == 2:
+			gripper_SE3s = SE3 @ gripper_SE3s.to(SE3)
+		elif len(SE3.shape) == 3:
+			gripper_SE3s = SE3.unsqueeze(1) @ gripper_SE3s.to(SE3).unsqueeze(0) # n_pose x n_grasp x 4 x 4
 	else:
 		return torch.tensor([])
 
@@ -137,9 +141,11 @@ def superquadric_grasp_planner(
 			[0, 0, 1, 0], 
 			[0, 0, 0, 1]
 		]]).to(gripper_SE3s)
+		if len(SE3.shape) == 3:
+			flip_matrix = flip_matrix.unsqueeze(0)
 		flipped_gripper_SE3s= gripper_SE3s @ flip_matrix
 		if augment_flip:
-			gripper_SE3s = torch.cat([gripper_SE3s, flipped_gripper_SE3s], dim=0)
+			gripper_SE3s = torch.cat([gripper_SE3s, flipped_gripper_SE3s], dim=-3)
 		else:
 			gripper_SE3s = flipped_gripper_SE3s
 		
@@ -151,15 +157,20 @@ def superquadric_grasp_planner(
 			[torch.sin(theta),  0,  torch.cos(theta),  d-d*torch.cos(theta)], 
 			[0, 	 			0,  0,  			   1]
 		]]).to(gripper_SE3s)
+		if len(SE3.shape) == 3:
+			tilt_matrix = tilt_matrix.unsqueeze(0)
 		tilted_gripper_SE3s = gripper_SE3s @ tilt_matrix
 		if augment_tilt:
-			gripper_SE3s = torch.cat([gripper_SE3s, tilted_gripper_SE3s], dim=0)
+			gripper_SE3s = torch.cat([gripper_SE3s, tilted_gripper_SE3s], dim=-3)
 		else:
 			gripper_SE3s = tilted_gripper_SE3s
    
-	projected_z_axis_of_gripper = deepcopy(gripper_SE3s[:,0:3,2])
-	projected_z_axis_of_gripper[:, 2] = 0
+	projected_z_axis_of_gripper = deepcopy(gripper_SE3s[...,0:3,2])
+	projected_z_axis_of_gripper[..., 2] = 0
 	projected_z_axis_of_gripper = projected_z_axis_of_gripper/projected_z_axis_of_gripper.norm(dim=-1, keepdim=True)
 	bool = projected_z_axis_of_gripper @ desired_dir.to(gripper_SE3s) >= 0.5 ** 0.5 # 0.5
 	#print(projected_z_axis_of_gripper @ desired_dir.to(gripper_SE3s))
-	return gripper_SE3s[bool]
+	if return_bool:
+		return gripper_SE3s[bool], bool
+	else:
+		return gripper_SE3s[bool]
