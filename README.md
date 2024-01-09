@@ -29,20 +29,9 @@ The project is developed under a standard PyTorch environment.
 - h5py
 - pysimplegui
 - urdfpy (np.float)
+> **Warining:** If you get import error "ImportError: cannot import name 'gcd' from 'fractions'", you can solve it by running `conda install -c conda-forge networkx=2.5`.
 
-conda install -c conda-forge networkx=2.5
-
-<!-- - tqdm
-- h5py
-- Open3D
-- scipy
-- scikit-learn 
-- opencv-python
-- imageio
-- matplotlib
-- scikit-image
-- dominate
-- numba -->
+> **Warining:** If you get attribute error "AttributeError: module 'numpy' has no attribute 'float'", you have to manually revised the code; change `np.float` to `float` in `urdf.py`. 
 
 ### Pretrained model
 Pre-trained models should be stored in `pretrained/`. The pre-trained models are already provided in this repository. After set up, the `pretrained/` directory should be follows.
@@ -64,30 +53,58 @@ pretrained
 
 ## Running
 ### Control in Simulation Environment
-The control scripts in Pybullet simulator are as follows:
+The control script in Pybullet simulator is as follows:
 ```
-python control.py --config configs/control_config.yml
+python control.py --config configs/control_objects_{X}_config.yml
 ```
-warning: linux
+- `X` is either `2`, `4`, `6` or `8`. 
+- `--enable_gui` specifies whether PyBullet UI is on or off. The value should be `True` or `False`.
+- `--device` specifies an GPU number to use.
+- By changing the `idx` value in the config file, you can see the mechanical search in other scenes. `idx` is an integer between 1 and 50.
+- The experimental results will be saved in `save_dir` in the config file.
+> **Warining:** Since the computation speed of PyBullet is different on Linux and Windows, the experiment results are also different (especially behaves strangely when running on Windows). It is recommended to run the code on Linux.
 
 ### Spawn Object Sets for Experiments
-The scripts in Pybullet simulator are as follows:
+The script for generating scenes in Pybullet simulator is as follows:
 ```
 python spawn.py --config configs/spawn_config.yml
 ```
+- `--enable_gui` specifies whether PyBullet UI is on or off. The value should be `True` or `False`.
+- You can change the number of objects by changing the `num_objects` value in the config file. 
+- The scenes will be saved in `save_dir` in the config file.
 
 ### Replay Episodes
 The scripts in Pybullet simulator are as follows:
 ```
-python replay_episode.py 
+python replay_episode.py --config configs/replay_episode_config.yml
 ```
-pybullet unrecognized option 'preset'
-conda update ffmpeg
+- You can see other meachanical search results by changing the `exp_name` value in the config file. The value should be a name of folder generated from control scripts (i.e., `control.py`). 
+- A PyBullet `mp4` video and a `pkl` file for Blender video will be saved in `video_dir` and `save_dir` in the config file, respectively.
+> **Warining:** If you get error "pybullet unrecognized option 'preset'", you can solve it by running `conda update ffmpeg`.
+
+Example result PyBullet `mp4` video is as follows:
+<div class="imgCollage">
+<span style="width: 100%"><img src="figures/video.gif" width="500"></span>
+</div>
+  <I>Figure 2: An example mechanical search video in PyBullet simulator.</I>
 
 
-### (Optional) Train Models
+### Replay Episodes with Blender
+```shell
+ffmpeg -framerate 30 -pattern_type glob -i '*_L.png' -c:v libx264 -pix_fmt yuv420p out_L.mp4
+ffmpeg -framerate 30 -pattern_type glob -i '*_R.png' -c:v libx264 -pix_fmt yuv420p out_R.mp4
+ffmpeg -framerate 30 -pattern_type glob -i '*_X.png' -c:v libx264 -pix_fmt yuv420p out_X.mp4
+```
 
+Sample gif images for interpolation:
+<div class="imgCollage">
+<span style="width: 31.8%"><img src="figures/out_L.gif" width="250"></span>
+<span style="width: 31.8%"><img src="figures/out_R.gif" width="250"> </span>
+<span style="width: 31.8%"><img src="figures/out_X.gif" width="250"> </span>
+</div>
+  <I>Figure 3. </I>
 
+<!-- ### (Optional) Train Models
 If you want to generate your own custom dataset, run the following script:
 ```shell
 python data_generation.py --enable_gui                # PyBullet UI on/off
@@ -98,7 +115,7 @@ python data_generation.py --enable_gui                # PyBullet UI on/off
                           --training_num 150          # the number of training set; total number of training set is (training_num * push_num)
                           --validation_num 15         # the number of validation set; total number of validation set is (validation_num * push_num)
                           --test_num 15               # the number of test set; total number of test set is (test_num * push_num)
-``` 
+```  -->
 
 ## Citation
 If you found this repository useful in your research, please consider citing:

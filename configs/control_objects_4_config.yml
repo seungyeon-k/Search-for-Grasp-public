@@ -1,0 +1,14 @@
+controller:
+  objects:
+    num_objects: 4
+    spawn_mode: load
+  max_iter: 10
+  mode: search_for_grasp # search_for_grasp, search_and_grasp
+  hinderance_score_weight: 0.1
+  hinderance_mode: smooth
+  action_pool: ["pick_and_place", "push"]
+  recognition: True
+  save_dir: exp_results_sim/objects_4
+  load_states_dir: exp_configs/objects_4
+
+idx : 3

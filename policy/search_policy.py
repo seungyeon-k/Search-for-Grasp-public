@@ -16,6 +16,7 @@ import open3d as o3d
 from .utils import get_poses_from_grid
 
 from models import load_pretrained
+from tqdm import trange, tqdm
 
 class SearchPolicy():
 	def __init__(
@@ -185,7 +186,6 @@ class SearchPolicy():
 		with torch.no_grad():
 			if not self.found_target:
 
-				# tic = time.time()
 				predicted_pose_map = get_pose_map(
 					pose_map_grid,
 					self.target_object_sq_param,
@@ -193,8 +193,6 @@ class SearchPolicy():
 					objects_sq_params,
 					self.depth_renderer
 				)
-				# toc = time.time()
-				# print(f"elasped time for pose map calculation : {toc-tic}")
 
 				# convert grid map to SE(3)s
 				SE3s = get_poses_from_grid(pose_map_grid, height_offset=self.target_object_sq_param[2])
@@ -240,12 +238,14 @@ class SearchPolicy():
 			_type_: _description_
 		"""
 		initial_score, pose_map_grid = self.evaluate(objects_poses, objects_sq_params, self.pose_map_grid)
-		# print(f"init score is {initial_score}")
 		total_score_list = []
 		saved_action = []
 		success_sampling = False
-		for sample_idx in range(self.sample_num):
-      
+
+		# evaluate sample
+		print('Finding best policy...')
+		for sample_idx in trange(self.sample_num):
+	  
 			current_object_poses = deepcopy(objects_poses)
 			current_score = deepcopy(initial_score)
 			total_score = deepcopy(initial_score)
@@ -257,7 +257,7 @@ class SearchPolicy():
 				remove_idxs = []
 			else:
 				remove_idxs = [self.target_idx]
-    
+	
 			for step in range(self.step_num):
 				pc_of_objects = get_pc_of_objects(current_object_poses, objects_sq_params)
 				# sample action
@@ -343,8 +343,6 @@ class SearchPolicy():
 		Returns:
 			_type_: _description_
 		"""
-		
-		tic = time.time()
 
 		pose_map_update_success = self.update_pose_map(
 			objects_poses,
@@ -358,9 +356,6 @@ class SearchPolicy():
 			}]
   
 		actions = self.sample_trajectories(objects_poses, objects_sq_params)
-
-		toc = time.time()
-		print(f"elasped time for search policy : {toc-tic}")
 
 		action_infos = []
 
@@ -382,7 +377,7 @@ class SearchPolicy():
 						"initial_grasp_pose" : initial_grasp_pose,
 						"final_grasp_pose" : final_grasp_pose,
 					}
-     
+	 
 					action_infos.append(action_info)
 
 			elif action["action_type"] == 'pushing':
@@ -400,7 +395,7 @@ class SearchPolicy():
 				}
 
 				action_infos.append(action_info)
-    
+	
 		if len(action_infos) == 0:
 			return [{
 				"action_type" : "fail",
