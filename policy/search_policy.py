@@ -217,31 +217,31 @@ class SearchPolicy():
 				hindrance_score_list = []
 				pc_of_target_objects = get_pc_of_objects(SE3s, self.target_object_sq_param.repeat(len(SE3s), 1))
 				tic = time.time()
-				# for SE3, pc_of_target_object in zip(SE3s, pc_of_target_objects):
-				# 	hindrance_score = get_graspability_hindrance(
-				# 		SE3,
-				# 		self.target_object_sq_param,
-				# 		objects_poses,
-				# 		objects_sq_params,
-				# 		pc_of_target_object,
-				# 		self.shelf_info,
-				# 		self.gripper_open_pc,
-				# 		visualize=False,
-      			# 		mode=self.hinderance_mode
-				# 	)
-				# 	hindrance_score_list.append(hindrance_score)
-				# hindrance_score_list = torch.tensor(hindrance_score_list)
-				hindrance_score = get_graspability_hindrance_batchwise(
-					SE3s,
-					self.target_object_sq_param,
-					objects_poses,
-					objects_sq_params,
-					pc_of_target_objects,
-					self.shelf_info,
-					self.gripper_open_pc,
-					visualize=False,
-					mode=self.hinderance_mode
-				)
+				for SE3, pc_of_target_object in zip(SE3s, pc_of_target_objects):
+					hindrance_score = get_graspability_hindrance(
+						SE3,
+						self.target_object_sq_param,
+						objects_poses,
+						objects_sq_params,
+						pc_of_target_object,
+						self.shelf_info,
+						self.gripper_open_pc,
+						visualize=False,
+      					mode=self.hinderance_mode
+					)
+					hindrance_score_list.append(hindrance_score)
+				hindrance_score_list = torch.tensor(hindrance_score_list)
+				# hindrance_score = get_graspability_hindrance_batchwise(
+				# 	SE3s,
+				# 	self.target_object_sq_param,
+				# 	objects_poses,
+				# 	objects_sq_params,
+				# 	pc_of_target_objects,
+				# 	self.shelf_info,
+				# 	self.gripper_open_pc,
+				# 	visualize=False,
+				# 	mode=self.hinderance_mode
+				# )
 				toc = time.time()
 				print(f"elasped time for grapability map calculation : {toc-tic}")
 

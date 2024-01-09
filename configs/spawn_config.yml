@@ -1,0 +1,7 @@
+controller:
+  objects:
+    num_objects: 6
+    spawn_mode: random
+  save_dir: exp_configs_new/objects_6
+    
+epoch: 100

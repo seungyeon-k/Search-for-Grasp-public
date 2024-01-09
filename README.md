@@ -66,7 +66,7 @@ The control scripts in Pybullet simulator are as follows:
 python control.py --config configs/control_config.yml
 ```
 
-<!-- ### Spawn Object Sets for Experiments
+### Spawn Object Sets for Experiments
 The scripts in Pybullet simulator are as follows:
 ```
 python spawn.py
@@ -77,23 +77,12 @@ The scripts in Pybullet simulator are as follows:
 ```
 python replay_episode.py 
 ```
+pybullet unrecognized option 'preset'
+conda update ffmpeg
+
 
 ### (Optional) Train Models
-The training script is `train.py`. 
-- `--config` specifies a path to a configuration yml file.
-- `--logdir` specifies a directory where the results will be saved.
-- `--run` specifies a name for an experiment.
-- `--device` specifies an GPU number to use.
 
-Training codes for recognition network, segmentation network, and pushing dynamics model are as follows:
-```
-python train.py --config configs/{X}_config.yml
-```
-- `X` is either `segmentation`, `recognition`, `sqpdnet_2d_motion_only_config`, or `sqpdnet_3d_motion_only_config`. 
-- If you want to see the results of the intermediate training process in tensorboard, run this code:
-  ```
-  tensorboard --logdir train_results/{X}_config --host {ip address}
-  ```
 
 If you want to generate your own custom dataset, run the following script:
 ```shell
@@ -105,7 +94,7 @@ python data_generation.py --enable_gui                # PyBullet UI on/off
                           --training_num 150          # the number of training set; total number of training set is (training_num * push_num)
                           --validation_num 15         # the number of validation set; total number of validation set is (validation_num * push_num)
                           --test_num 15               # the number of test set; total number of test set is (test_num * push_num)
-``` -->
+``` 
 
 ## Citation
 If you found this repository useful in your research, please consider citing:
