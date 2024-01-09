@@ -102,19 +102,8 @@ class SearchPolicy():
 				objects_sq_params,
 				self.depth_renderer
 			)
-
-			# render_map(
-			# 	objects_poses,
-			# 	objects_sq_params,
-			# 	self.pose_map_grid,
-			# 	self.pose_map,
-			# 	self.shelf_info
-			# )
-
-			self.pose_map_grid = self.pose_map_grid[self.pose_map]
-			
+			self.pose_map_grid = self.pose_map_grid[self.pose_map]	
 		else:
-    			
 			# if target object was found, confine the existable position to detected target position
 			self.pose_map = torch.tensor([True])
 			self.pose_map_grid = self.target_pose[0:2, 3].unsqueeze(0)
@@ -216,34 +205,17 @@ class SearchPolicy():
 			if self.mode == "search_for_grasp" or (self.mode == "search_and_grasp" and self.found_target):
 				hindrance_score_list = []
 				pc_of_target_objects = get_pc_of_objects(SE3s, self.target_object_sq_param.repeat(len(SE3s), 1))
-				tic = time.time()
-				for SE3, pc_of_target_object in zip(SE3s, pc_of_target_objects):
-					hindrance_score = get_graspability_hindrance(
-						SE3,
-						self.target_object_sq_param,
-						objects_poses,
-						objects_sq_params,
-						pc_of_target_object,
-						self.shelf_info,
-						self.gripper_open_pc,
-						visualize=False,
-      					mode=self.hinderance_mode
-					)
-					hindrance_score_list.append(hindrance_score)
-				hindrance_score_list = torch.tensor(hindrance_score_list)
-				# hindrance_score = get_graspability_hindrance_batchwise(
-				# 	SE3s,
-				# 	self.target_object_sq_param,
-				# 	objects_poses,
-				# 	objects_sq_params,
-				# 	pc_of_target_objects,
-				# 	self.shelf_info,
-				# 	self.gripper_open_pc,
-				# 	visualize=False,
-				# 	mode=self.hinderance_mode
-				# )
-				toc = time.time()
-				print(f"elasped time for grapability map calculation : {toc-tic}")
+				hindrance_score_list = get_graspability_hindrance_batchwise(
+					SE3s,
+					self.target_object_sq_param,
+					objects_poses,
+					objects_sq_params,
+					pc_of_target_objects,
+					self.shelf_info,
+					self.gripper_open_pc,
+					visualize=False,
+					mode=self.hinderance_mode
+				)
 
 			if self.mode == "search_for_grasp":
 				score = -torch.sum(hindrance_score_list) * self.hinderance_score_weight - torch.sum(predicted_pose_map)
