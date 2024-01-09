@@ -27,7 +27,10 @@ The project is developed under a standard PyTorch environment.
 - opencv-python
 - dominate
 - h5py
-- tensorboardx (optional)
+- pysimplegui
+- urdfpy (np.float)
+
+conda install -c conda-forge networkx=2.5
 
 <!-- - tqdm
 - h5py
@@ -65,11 +68,12 @@ The control scripts in Pybullet simulator are as follows:
 ```
 python control.py --config configs/control_config.yml
 ```
+warning: linux
 
 ### Spawn Object Sets for Experiments
 The scripts in Pybullet simulator are as follows:
 ```
-python spawn.py
+python spawn.py --config configs/spawn_config.yml
 ```
 
 ### Replay Episodes

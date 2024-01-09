@@ -1,9 +1,9 @@
-<?xml version="0.0" ?>
+<?xml version="1.0" ?>
 <robot name="plane">
 
   <link name="shelf_bottom">
     <contact>
-        <lateral_friction value="1."/>
+        <lateral_friction value="1"/>
         <spinning_friction value="0.01"/>
 			  <rolling_friction value="0.01"/>
     </contact>
@@ -15,17 +15,15 @@
     </inertial>
       
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.392 0.803 0.022"/>
+        <mesh filename="meshes/shelf_bottom.obj" />
       </geometry>
-      <material name="table_gray"/>
+      <!-- <material name="table_gray"/> -->
     </visual>
     
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
       <geometry>
-        <box size="0.392 0.803 0.022"/>
+        <mesh filename="meshes/shelf_bottom.obj" />
       </geometry>
     </collision>
       
@@ -33,29 +31,27 @@
 
   <link name="shelf_left">
     <contact>
-        <lateral_friction value="1."/>
+        <lateral_friction value="1"/>
         <spinning_friction value="0.01"/>
 			  <rolling_friction value="0.01"/>
     </contact>
     
     <inertial>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0.3925 0.3905"/>
       <mass value=".0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
       
     <visual>
-      <origin rpy="0 0 0" xyz="0 0.3925 0.3905"/>
       <geometry>
-        <box size="0.392 0.018 0.759"/>
+        <mesh filename="meshes/shelf_left.obj" />
       </geometry>
-      <material name="table_gray"/>
+      <!-- <material name="table_gray"/> -->
     </visual>
     
     <collision>
-      <origin rpy="0 0 0" xyz="0 0.3925 0.3905"/>
       <geometry>
-        <box size="0.392 0.018 0.759"/>
+        <mesh filename="meshes/shelf_left.obj" />
       </geometry>
     </collision>
       
@@ -63,29 +59,27 @@
 
   <link name="shelf_right">
     <contact>
-        <lateral_friction value="1."/>
+        <lateral_friction value="1"/>
         <spinning_friction value="0.01"/>
 			  <rolling_friction value="0.01"/>
     </contact>
     
     <inertial>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 -0.3925 0.3905"/>
       <mass value=".0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
       
     <visual>
-      <origin rpy="0 0 0" xyz="0 -0.3925 0.3905"/>
       <geometry>
-        <box size="0.392 0.018 0.759"/>
+        <mesh filename="meshes/shelf_right.obj" />
       </geometry>
-      <material name="table_gray"/>
+      <!-- <material name="table_gray"/> -->
     </visual>
     
     <collision>
-      <origin rpy="0 0 0" xyz="0 -0.3925 0.3905"/>
       <geometry>
-        <box size="0.392 0.018 0.759"/>
+        <mesh filename="meshes/shelf_right.obj" />
       </geometry>
     </collision>
       
@@ -93,29 +87,27 @@
 
   <link name="shelf_upper">
     <contact>
-        <lateral_friction value="1."/>
+        <lateral_friction value="1"/>
         <spinning_friction value="0.01"/>
 			  <rolling_friction value="0.01"/>
     </contact>
     
     <inertial>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0 0 0.781"/>
       <mass value=".0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
       
     <visual>
-      <origin rpy="0 0 0" xyz="0 0 0.781"/>
       <geometry>
-        <box size="0.392 0.803 0.022"/>
+        <mesh filename="meshes/shelf_upper.obj" />
       </geometry>
-      <material name="table_gray"/>
+      <!-- <material name="table_gray"/> -->
     </visual>
     
     <collision>
-      <origin rpy="0 0 0" xyz="0 0 0.781"/>
       <geometry>
-        <box size="0.392 0.803 0.022"/>
+        <mesh filename="meshes/shelf_upper.obj" />
       </geometry>
     </collision>
       
@@ -123,29 +115,27 @@
 
   <link name="shelf_middle">
     <contact>
-        <lateral_friction value="1."/>
+        <lateral_friction value="1"/>
         <spinning_friction value="0.01"/>
 			  <rolling_friction value="0.01"/>
     </contact>
     
     <inertial>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="0.009 0 0.3905"/>
       <mass value=".0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
       
     <visual>
-      <origin rpy="0 0 0" xyz="0.009 0 0.3905"/>
       <geometry>
-        <box size="0.374 0.767 0.022"/>
+        <mesh filename="meshes/shelf_middle.obj" />
       </geometry>
-      <material name="table_gray"/>
+      <!-- <material name="table_gray"/> -->
     </visual>
     
     <collision>
-      <origin rpy="0 0 0" xyz="0.009 0 0.3905"/>
       <geometry>
-        <box size="0.374 0.767 0.022"/>
+        <mesh filename="meshes/shelf_middle.obj" />
       </geometry>
     </collision>
       
@@ -153,29 +143,27 @@
 
   <link name="shelf_back">
     <contact>
-        <lateral_friction value="1."/>
+        <lateral_friction value="1"/>
         <spinning_friction value="0.01"/>
 			  <rolling_friction value="0.01"/>
     </contact>
     
     <inertial>
-      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <origin rpy="0 0 0" xyz="-0.187 0 0.3905"/>
       <mass value=".0"/>
       <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
     </inertial>
       
     <visual>
-      <origin rpy="0 0 0" xyz="-0.187 0 0.3905"/>
       <geometry>
-        <box size="0.018 0.767 0.759"/>
+        <mesh filename="meshes/shelf_back.obj" />
       </geometry>
-      <material name="table_gray"/>
+      <!-- <material name="table_gray"/> -->
     </visual>
     
     <collision>
-      <origin rpy="0 0 0" xyz="-0.187 0 0.3905"/>
       <geometry>
-        <box size="0.018 0.767 0.759"/>
+        <mesh filename="meshes/shelf_back.obj" />
       </geometry>
     </collision>
       

@@ -478,7 +478,7 @@ class SimulationShelfEnv():
 
 		for i in range(obj_num):
 			tot_pixel_num = np.sum(mask_sep[i + 1])
-			vis_pixel_num = np.sum((mask == (i+1)).astype(np.float))
+			vis_pixel_num = np.sum((mask == (i+1)).astype(float))
 
 			if vis_pixel_num < 0.4 * tot_pixel_num:
 				return True

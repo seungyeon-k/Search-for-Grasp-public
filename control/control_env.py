@@ -1,4 +1,6 @@
 import pybullet as p
+import os
+import open3d as o3d
 import numpy as np
 import torch
 import time
@@ -18,7 +20,11 @@ class ControlSimulationEnv:
 			
 		# pybullet settings
 		self.enable_gui = enable_gui
-		self.sim = PybulletShelfSim(enable_gui=enable_gui)
+		self.sim = PybulletShelfSim(
+			enable_gui=enable_gui,
+			blender_recorder=blender_recorder
+			)
+		self.blender_recorder = blender_recorder
 
 		# environment settings
 		self.workspace_bounds = self.sim.workspace_bounds
@@ -104,6 +110,9 @@ class ControlSimulationEnv:
 	#############################################################
 	################# ENVIRONMENT INITIALIZE ####################
 	#############################################################
+
+	def start_simulation(self):
+		self.sim.start_simulation_thread()
 
 	def reset(self, cfg_objects):
 
@@ -308,7 +317,7 @@ class ControlSimulationEnv:
 		with open(file_dir,"rb") as f:
 			object_infos = pickle.load(f)
 		self.object_infos = []
-		for object_info in object_infos:
+		for self.loaded_object_idx, object_info in enumerate(object_infos):
 			type = object_info["type"]
 			size = object_info['size']
 			position = object_info['position']
@@ -423,22 +432,100 @@ class ControlSimulationEnv:
 		if object_color is None:
 			object_color = colormaps['Blues'](np.random.rand() * 0.7 + 0.3)
 
-		# declare collision
-		collision_id = p.createCollisionShape(
-			p.GEOM_BOX, 
-			halfExtents=np.array(
-				[size_x/2, size_y/2, size_z/2]
-			) / scale_box
-		)
-		
-		# create object
-		body_id = p.createMultiBody(
-			0.05, 
-			collision_id, 
-			-1, 
-			position, 
-			orientation
-		)
+		# declare objects
+		if self.blender_recorder:
+				
+			# save directory
+			urdf_folder = 'assets/shelf_objects'
+			mesh_folder = os.path.join(urdf_folder, 'meshes')
+			if not os.path.exists(mesh_folder):
+				os.makedirs(mesh_folder)	
+					
+			# paths
+			urdf_path = os.path.join(
+				urdf_folder, 
+				f'object_{self.loaded_object_idx}.urdf'
+			)
+			mesh_path = os.path.join(
+				mesh_folder, 
+				f'object_{self.loaded_object_idx}.obj'
+			)
+			filename = os.path.join(
+				'meshes',
+				f'object_{self.loaded_object_idx}.obj'
+			)
+
+			# save mesh
+			mesh_box = o3d.geometry.TriangleMesh.create_box(
+				width = size_x, 
+				height = size_y, 
+				depth = size_z
+			)
+			mesh_box.translate([-size_x/2, -size_y/2, -size_z/2])
+			mesh_box.paint_uniform_color([object_color[0], object_color[1], object_color[2]])
+			o3d.io.write_triangle_mesh(
+				mesh_path, 
+				mesh_box,
+				# write_vertex_colors=True
+			)
+
+			# urdf contents
+			urdf_contents = f"""
+			<robot name="object_{self.loaded_object_idx}">
+				<link name="link_object_{self.loaded_object_idx}">
+					<visual>
+						<geometry>
+							<mesh filename="{filename}" />
+						</geometry>
+					</visual>
+
+					<collision>
+						<geometry>
+							<mesh filename="{filename}" />
+						</geometry>
+					</collision>
+					
+					<inertial>
+						<origin rpy="0 0 0" xyz="0 0 0"/>
+						<mass value="0.3" />
+						<inertia ixx="0.3" ixy="0" ixz="0" iyy="0.3" iyz="0" izz="0.3" />
+					</inertial>
+				</link>
+			</robot>
+			"""
+
+			# save
+			file = open(urdf_path, "w")
+			file.write(urdf_contents)
+			file.close()
+			time.sleep(0.2)
+
+			# load object
+			body_id = p.loadURDF(
+				urdf_path, 
+				position, 
+				orientation
+			)
+
+		else:
+
+			# declare collision
+			collision_id = p.createCollisionShape(
+				p.GEOM_BOX, 
+				halfExtents=np.array(
+					[size_x/2, size_y/2, size_z/2]
+				) / scale_box
+			)
+			
+			# create object
+			body_id = p.createMultiBody(
+				0.05, 
+				collision_id, 
+				-1, 
+				position, 
+				orientation
+			)
+
 		p.changeDynamics(
 			body_id, 
 			-1, 
@@ -463,6 +550,14 @@ class ControlSimulationEnv:
 		}
 		self.object_infos.append(object_info)
 
+		# blender 
+		if self.blender_recorder:
+			self.sim.sim_recorder_register_object(
+				body_id, 
+				urdf_path, 
+				global_color=object_color
+			)
+
 		return body_id
 
 	def _create_cylinder(
@@ -481,22 +576,101 @@ class ControlSimulationEnv:
 		# color info
 		if object_color is None:
 			object_color = colormaps['Blues'](np.random.rand() * 0.7 + 0.3)
-		
-		# declare collision
-		collision_id = p.createCollisionShape(
-			p.GEOM_CYLINDER, 
-			radius=size_r/scale_cylinder, 
-			height=size_h/scale_cylinder
-		)
-		
-		# create object
-		body_id = p.createMultiBody(
-			0.05, 
-			collision_id, 
-			-1, 
-			position, 
-			orientation
-		)
+
+		# declare objects
+		if self.blender_recorder:
+				
+			# save directory
+			urdf_folder = 'assets/shelf_objects'
+			mesh_folder = os.path.join(urdf_folder, 'meshes')
+			if not os.path.exists(mesh_folder):
+				os.makedirs(mesh_folder)	
+					
+			# paths
+			urdf_path = os.path.join(
+				urdf_folder, 
+				f'object_{self.loaded_object_idx}.urdf'
+			)
+			mesh_path = os.path.join(
+				mesh_folder, 
+				f'object_{self.loaded_object_idx}.obj'
+			)
+			filename = os.path.join(
+				'meshes',
+				f'object_{self.loaded_object_idx}.obj'
+			)
+
+			# save mesh
+			mesh_cylinder = o3d.geometry.TriangleMesh.create_cylinder(
+				radius=size_r, 
+				height=size_h,
+				resolution=50,
+				split=4
+			)
+			
+			mesh_cylinder.paint_uniform_color([object_color[0], object_color[1], object_color[2]])
+			o3d.io.write_triangle_mesh(
+				mesh_path, 
+				mesh_cylinder,
+				# write_vertex_colors=True
+			)
+			
+			# urdf contents
+			urdf_contents = f"""
+			<robot name="object_{self.loaded_object_idx}">
+				<link name="link_object_{self.loaded_object_idx}">
+					<visual>
+						<geometry>
+							<mesh filename="{filename}" />
+						</geometry>
+					</visual>
+
+					<collision>
+						<geometry>
+							<mesh filename="{filename}" />
+						</geometry>
+					</collision>
+					
+					<inertial>
+						<origin rpy="0 0 0" xyz="0 0 0"/>
+						<mass value="0.3" />
+						<inertia ixx="0.3" ixy="0" ixz="0" iyy="0.3" iyz="0" izz="0.3" />
+					</inertial>
+				</link>
+			</robot>
+			"""
+
+			# save
+			file = open(urdf_path, "w")
+			file.write(urdf_contents)
+			file.close()
+			time.sleep(0.2)
+
+			# load object
+			body_id = p.loadURDF(
+				urdf_path, 
+				position, 
+				orientation
+			)
+
+		else:
+
+			# declare collision
+			collision_id = p.createCollisionShape(
+				p.GEOM_CYLINDER, 
+				radius=size_r/scale_cylinder, 
+				height=size_h/scale_cylinder
+			)
+			
+			# create object
+			body_id = p.createMultiBody(
+				0.05, 
+				collision_id, 
+				-1, 
+				position, 
+				orientation
+			)
+
 		p.changeDynamics(
 			body_id, 
 			-1, 
@@ -519,6 +693,14 @@ class ControlSimulationEnv:
 					   'object_color' : object_color,
 					  }
 		self.object_infos.append(object_info)
+
+		# blender 
+		if self.blender_recorder:
+			self.sim.sim_recorder_register_object(
+				body_id, 
+				urdf_path, 
+				global_color=object_color
+			)
 
 		return body_id
 

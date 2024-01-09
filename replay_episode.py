@@ -14,9 +14,9 @@ from control.gripper import Gripper
 if __name__ == "__main__":
 
     # setting
-    blender_recorder = False
+    blender_recorder = True
     exp_root_folder_name = f'exp_results_sim/objects_2/3/R_search_for_grasp_cylinder'
-    video_path = f'videos/video.mp4'
+    video_path = f'video.mp4'
     save_name = f'demo.pkl'
 
     # load data
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     p.configureDebugVisualizer(p.COV_ENABLE_GUI,0)
     loggingId = p.startStateLogging(p.STATE_LOGGING_VIDEO_MP4, video_path)
     env.load_objects(initial_scenario_path)
-    # env.start_simulation()
+    env.start_simulation()
     print(f"logging id: {loggingId}")
     for log in logs:
         if log['status'] == 'success':

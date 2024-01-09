@@ -10,10 +10,10 @@ from copy import deepcopy
 from functions.utils import get_SE3s
 from control.gripper import Gripper
 from functions.lie import exp_se3, matrices_to_quats, log_SO3, exp_so3
-
+from pybullet_blender.pyBulletSimRecorder import PyBulletRecorder
 
 class PybulletShelfSim:
-	def __init__(self, enable_gui):
+	def __init__(self, enable_gui, blender_recorder=False):
 		
 		# environment settings
 		self.plane_z = -0.8
@@ -64,7 +64,15 @@ class PybulletShelfSim:
 				[self.high_shelf_position[2] + 0.022/2 + 0.3905, self.high_shelf_position[2] + 0.022 + 0.76]
 			]
 		)
-  
+
+		# Start blender recorder
+		self.blender_recorder = blender_recorder
+		if self.blender_recorder:
+			self.recorder = PyBulletRecorder()
+			self.recorder_time_interval = 5
+		else:
+			self.recorder = None
+
 		# Start PyBullet simulation
 		if enable_gui:
 			self._physics_client = p.connect(p.GUI)  # or p.DIRECT for non-graphical version
@@ -72,24 +80,33 @@ class PybulletShelfSim:
 			self._physics_client = p.connect(p.DIRECT)  # non-graphical version
 		p.setAdditionalSearchPath(pybullet_data.getDataPath())
 		p.setGravity(0, 0, -9.8)
-		step_sim_thread = threading.Thread(target=self.step_simulation)
-		step_sim_thread.daemon = True
-		step_sim_thread.start()
+		if not self.blender_recorder:
+			self.start_simulation_thread()
 
 		# Add ground plane
 		self._plane_id = p.loadURDF("plane.urdf", [0, 0, self.plane_z])
 
-		# # Add table
-		table_path = 'assets/table/'
-		self._low_table_id = p.loadURDF(table_path + 'low_table.urdf', self.low_table_position, useFixedBase=True)
+		# Add table
+		table_path = 'assets/table/low_table_for_blender.urdf'
+		self._low_table_id = p.loadURDF(table_path, self.low_table_position, useFixedBase=True)
+		if self.blender_recorder:
+			self.recorder.register_object(self._low_table_id, table_path)
 
 		# Add shelf
-		shelf_path = 'assets/shelf/shelf.urdf'
+		shelf_path = 'assets/shelf/shelf_for_blender.urdf'
 		self._high_shelf_id = p.loadURDF(shelf_path, self.high_shelf_position, self.high_shelf_orientation, useFixedBase=True)
+		if self.blender_recorder:
+			self.recorder.register_object(self._high_shelf_id, shelf_path)
 
 		# Add Franka Panda Emika robot
-		robot_path = 'assets/panda/panda_with_gripper.urdf'
+		if self.blender_recorder:
+			robot_path = 'assets/panda/panda_with_gripper_full.urdf'
+		else:
+			robot_path = 'assets/panda/panda_with_gripper.urdf'
+		# robot_path = 'assets/panda_dae/panda_with_gripper.urdf'
 		self._robot_body_id = p.loadURDF(robot_path, [0.0, 0.0, 0.0], p.getQuaternionFromEuler([0, 0, 0]), useFixedBase=True)
+		if self.blender_recorder:
+			self.recorder.register_object(self._robot_body_id, robot_path)
 
 		# Get revolute joint indices of robot (skip fixed joints)
 		robot_joint_info = [p.getJointInfo(self._robot_body_id, i) for i in range(p.getNumJoints(self._robot_body_id))]
@@ -165,11 +182,39 @@ class PybulletShelfSim:
 	#################### SIMULATION STEP ########################
 	#############################################################
 
+	# start simulation 
+	def start_simulation_thread(self):
+		step_sim_thread = threading.Thread(target=self.step_simulation)
+		step_sim_thread.daemon = True
+		step_sim_thread.start()
+
 	# Step through simulation time
 	def step_simulation(self):
+		interval_stamp = 0
 		while True:
 			p.stepSimulation()
 			time.sleep(0.0001)
+			if self.blender_recorder:
+				interval_stamp += 1
+				if interval_stamp == self.recorder_time_interval:
+					self.recorder.add_keyframe()
+					interval_stamp = 0
+
+	#############################################################
+	################# BLENDER RECORDER UTILS ####################
+	#############################################################
+
+	# record
+	def sim_recorder_register_object(self, body_id, urdf_path, global_color=None):
+		if self.recorder is None:
+			raise ValueError('recorder is not defined in pybullet sim!')
+		self.recorder.register_object(body_id, urdf_path, global_color=global_color)
+
+	# save
+	def sim_recorder_save(self, save_name):
+		if self.recorder is None:
+			raise ValueError('recorder is not defined in pybullet sim!')
+		self.recorder.save(save_name)		
 
 	#############################################################
 	##################### GET PARAMETERS ########################

@@ -158,11 +158,11 @@ def imretype(im, dtype):
 	im = np.array(im)
 
 	if im.dtype in ['float', 'float16', 'float32', 'float64']:
-		im = im.astype(np.float)
+		im = im.astype(float)
 	elif im.dtype == 'uint8':
-		im = im.astype(np.float) / 255.
+		im = im.astype(float) / 255.
 	elif im.dtype == 'uint16':
-		im = im.astype(np.float) / 65535.
+		im = im.astype(float) / 65535.
 	else:
 		raise NotImplementedError('unsupported source dtype: {0}'.format(im.dtype))
 
