@@ -90,19 +90,32 @@ Example result PyBullet `mp4` video is as follows:
 
 
 ### Replay Episodes with Blender
+The Blender rendering code and program is modified from [pybullet-blender-recorder](https://github.com/huy-ha/pybullet-blender-recorder). This is tested on  `Blender 4.0`. 
+
+1. Install the blender plugin from [pybullet-blender-recorder](https://github.com/huy-ha/pybullet-blender-recorder). The `pyBulletSimImporter.py` is in `pybullet_blender` folder.
+
+2. After running `replay_episod.py`, you can obtain a `pkl` file (e.g., `demo.pkl`). In the `Animation` tab on the side bar in Blender, click on `[Import simulation]` and navigate to the `pkl` file you want to import.
+
+3. (Optional) You may use a template we used: *[test.blend](https://drive.google.com/file/d/1B6_CyCaQcZMQWseNboH18RcosRmm9n99/view?usp=sharing)*.
+
+4. (Optional) If you use the given template `test.blend` and replace the data with another `pkl` file, set `Target` to `shelf_for_blender_2_shelf_bottom_4` in `Track To` of `Constraints` of `Camera_L` and `Camera_X`.
+
+5. Execute `Render > Render Anitaion`. Set the save folder before execution.
+
+6. In the saved folder above, run the following does in the terminal:
 ```shell
 ffmpeg -framerate 30 -pattern_type glob -i '*_L.png' -c:v libx264 -pix_fmt yuv420p out_L.mp4
 ffmpeg -framerate 30 -pattern_type glob -i '*_R.png' -c:v libx264 -pix_fmt yuv420p out_R.mp4
 ffmpeg -framerate 30 -pattern_type glob -i '*_X.png' -c:v libx264 -pix_fmt yuv420p out_X.mp4
 ```
 
-Sample gif images for interpolation:
+Example Blender `mp4` videos is taken from various angles as follows:
 <div class="imgCollage">
 <span style="width: 31.8%"><img src="figures/out_L.gif" width="250"></span>
 <span style="width: 31.8%"><img src="figures/out_R.gif" width="250"> </span>
 <span style="width: 31.8%"><img src="figures/out_X.gif" width="250"> </span>
 </div>
-  <I>Figure 3. </I>
+  <I>Figure 3. Example mechanical search videos taken from various angles in Blender.</I>
 
 <!-- ### (Optional) Train Models
 If you want to generate your own custom dataset, run the following script:
