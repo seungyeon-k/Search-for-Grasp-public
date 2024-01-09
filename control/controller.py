@@ -60,9 +60,9 @@ class Controller:
 		self.device = device
 		
 		# process from cfg
-		self.max_iter = cfg_controller.max_iter
-		self.mode = cfg_controller.mode
-		self.recognition = cfg_controller.recognition
+		self.max_iter = cfg_controller.get('max_iter', None)
+		self.mode = cfg_controller.get('mode', None)
+		self.recognition = cfg_controller.get('recognition', None)
 		self.str_recognition = 'R' if self.recognition else 'O' 
 		self.objects = cfg_controller.objects
 		self.save_dir = cfg_controller.get('save_dir', datetime.now().strftime('%Y%m%d-%H%M'))
@@ -170,11 +170,8 @@ class Controller:
 
 	def spawn_datas(self, exp_idx):
 		# data save folder
-		save_folder = os.path.join(
-			'exp_results',
-   			self.save_dir,
-			'initial_scenarios'
-		)
+		save_folder = self.save_dir
+
 		if not os.path.exists(save_folder):
 			os.makedirs(save_folder)
 		
@@ -204,10 +201,9 @@ class Controller:
 		
 		# data save folder
 		save_folder = os.path.join(
-			f'exp_results_sim', 
    			self.save_dir,
-			f'{self.str_recognition}_{self.mode}_{self.target_object}',
-			str(exp_idx)
+			str(exp_idx),
+			f'{self.str_recognition}_{self.mode}_{self.target_object}'
 		)
 		if not os.path.exists(save_folder):
 			os.makedirs(save_folder)
@@ -438,35 +434,6 @@ class Controller:
 		data['seg_pred'] = label
 		data['mean_xyz'] = torch.zeros(3,1).unsqueeze(0)
 		data['diagonal_len'] = torch.tensor(1).unsqueeze(0)
-
-		# forward
-		data = self.sq_recognition(data)
-		data = self.unnormalize(data)
-		
-		# processing
-		Ts = data['Ts_pred'].squeeze(0)
-		parameters = data['parameters'].squeeze(0)
-
-		return Ts, parameters
-
-	def realworld_recognition(self, pc, labels=None):
-			
-		# initialize
-		data = {}
-		data['pc'] = pc
-
-		# segmentation
-		if labels is not None:
-			data['seg_pred'] = labels
-			data['mean_xyz'] = torch.zeros(3,1).unsqueeze(0)
-			data['diagonal_len'] = torch.tensor(1).unsqueeze(0)
-		else:
-			pc_input, mean_xyz_global, diagonal_len_global = normalize_pointcloud_seg(pc.squeeze(0).cpu().numpy())
-			data['pc'] = torch.Tensor(pc_input).unsqueeze(0)
-			data['mean_xyz'] = torch.Tensor(mean_xyz_global).unsqueeze(0)
-			data['diagonal_len'] = torch.tensor(diagonal_len_global).unsqueeze(0)
-			data = self.segmentation(data)
-			data = self.calibration(data)
 
 		# forward
 		data = self.sq_recognition(data)

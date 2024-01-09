@@ -14,7 +14,7 @@ from functions.superquadrics import get_SQ_parameters
 from functions.lie import quats_to_matrices, get_SE3s, matrices_to_quats
 
 class ControlSimulationEnv:
-	def __init__(self, enable_gui=True):
+	def __init__(self, enable_gui=True, blender_recorder=False):
 			
 		# pybullet settings
 		self.enable_gui = enable_gui
