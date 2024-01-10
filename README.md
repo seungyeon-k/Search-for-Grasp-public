@@ -5,6 +5,7 @@ The official repository for \<Leveraging 3D Reconstruction for Mechanical Search
 
 - *[Paper](https://proceedings.mlr.press/v229/kim23a/kim23a.pdf)* 
 - *[Supplementary video](https://www.youtube.com/watch?v=FoejNGHf1XM&t=2s)*
+- *[3-min video](https://www.youtube.com/watch?v=plNMhY2kxgM&t=63s)*
 - *[Slides](https://drive.google.com/file/d/12B6Xd9QTmh-tj19Ddhc-OTpQF9nHDPcd/view?usp=drive_link)*
 - *[Poster](https://drive.google.com/file/d/125g_tewVmJ0L1F-pEZBpRGNSHcpZs8Kw/view?usp=drive_link)*
 - *[Openreview](https://openreview.net/forum?id=ycy47ZX0Oc)*
