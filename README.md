@@ -3,6 +3,7 @@ The official repository for \<Leveraging 3D Reconstruction for Mechanical Search
 
 > This paper introduces a novel framework for finding and grasping a target object using a standard gripper on cluttered shelves, employing pushing and pick and-place actions. 
 
+- *[Project page](https://searchforgrasp.github.io/)*
 - *[Paper](https://proceedings.mlr.press/v229/kim23a/kim23a.pdf)* 
 - *[Supplementary video](https://www.youtube.com/watch?v=FoejNGHf1XM&t=2s)*
 - *[3-min video](https://www.youtube.com/watch?v=plNMhY2kxgM&t=63s)*
